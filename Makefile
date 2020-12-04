@@ -1,9 +1,9 @@
 default:
-	gcc problem.c -o prob -lpthread
-	./prob
+	gcc sem_2019096.c -o sem -lpthread
+	./sem
 
 compilation:
-	gcc problem.c -o prob -lpthread
+	gcc sem_2019096.c -o sem -lpthread
 
 run:
-	./prob
+	./sem

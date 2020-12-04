@@ -27,20 +27,18 @@ void fatal_check(int kf){
         checker=1;
     }    
 }
+
 void initialise(my_semaphore *s, int cntr){   //to initialize the semaphore structure
     if(cntr<=0){
         perror("Initialization failed.\n");
         exit(EXIT_FAILURE);
     }
-    //else{
         s->cntr = cntr;
         int checkTM = pthread_mutex_init(&(s->mutexForThreadBlock), NULL);
         if(checkTM != 0){perror("Initialization of thread mutex failed!!\n"); exit(EXIT_FAILURE);}
 
         int checkCM = pthread_mutex_init(&(s->mutexCounter),NULL);
         if(checkCM != 0){perror("Initialization of counter mutex failed!!\n"); exit(EXIT_FAILURE);}
-
-    //}
 }
 
 
@@ -72,7 +70,7 @@ int wait_non_blocking(my_semaphore *s){   //this function doesn't block the thre
 
     if(s->cntr<=0 && checker){   //semaphore utlised - resouce unavailable
 
-    //The pthread_mutex_trylock() function attempts to lock the mutex mutex, but doesn't block the calling thread if the mutex is already locked.
+    //The pthread_mutex_trylock() function attempts to lock the mutex, but doesn't block the calling thread if the mutex is already locked.
 
         int ret_trylock = pthread_mutex_trylock(&(s->mutexForThreadBlock));   //lock mutex if resources unavailale
 
@@ -95,7 +93,7 @@ int wait_non_blocking(my_semaphore *s){   //this function doesn't block the thre
 
 void signal(my_semaphore *s){  
 
-    pthread_mutex_lock(&(s->mutexCounter));  //so that counter isn;t manipulated by some other thread
+    pthread_mutex_lock(&(s->mutexCounter));  //so that counter isn't manipulated by some other thread
     if(s->cntr <= 0){   //thread had been blocked
         pthread_mutex_unlock(&(s->mutexForThreadBlock));  //unblock thread
     }
@@ -128,7 +126,7 @@ pthread_t *phils;   //philosophers represented by threads
 my_semaphore *chopsticks;
 my_semaphore *bowls;
 
-
+//philosopher's cycle
 void* philosopher(void* ph_id){
     int ph_ID = *((int *)ph_id);  //phil ID
     my_semaphore *chopstick_L = chopsticks + ph_ID;  //left chopstick id
@@ -190,8 +188,6 @@ int main(){
         exit(EXIT_FAILURE);
     }
 
-    //printf("Hello");
-
     //Assigning memory space using malloc
     phils = (pthread_t*) malloc (k*sizeof(pthread_t));
     bowls = (my_semaphore*) malloc (sizeof(my_semaphore));
@@ -208,6 +204,7 @@ int main(){
 
     initialise(bowls, 2);  //counting semaphore initialization of a pair of bowls
     fatal_check(k);
+
     //for all k philosophers
     for(int i=0;i<k;i++){
         int thread_check = pthread_create(phils+i,NULL, philosopher, phil_ID+i);
