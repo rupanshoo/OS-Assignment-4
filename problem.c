@@ -15,40 +15,45 @@ and if he isn't able to get a resource then all previous resources that he acqui
 
 
 // COUNTING SEMAPHORE IMPLEMENTATION WITH MUTEX
-typedef struct{
+typedef struct my_semaphore{
     int cntr;
     pthread_mutex_t mutexForThreadBlock;   //to lock semaphore
     pthread_mutex_t mutexCounter;          //to lock counter
 } my_semaphore;
 
-
+int checker=0;
+void fatal_check(int kf){
+    if(kf>=2){
+        checker=1;
+    }    
+}
 void initialise(my_semaphore *s, int cntr){   //to initialize the semaphore structure
     if(cntr<=0){
         perror("Initialization failed.\n");
         exit(EXIT_FAILURE);
     }
-    else{
+    //else{
         s->cntr = cntr;
         int checkTM = pthread_mutex_init(&(s->mutexForThreadBlock), NULL);
-        int checkCM = pthread_mutex_init(&(s->mutexCounter),NULL);
-
         if(checkTM != 0){perror("Initialization of thread mutex failed!!\n"); exit(EXIT_FAILURE);}
+
+        int checkCM = pthread_mutex_init(&(s->mutexCounter),NULL);
         if(checkCM != 0){perror("Initialization of counter mutex failed!!\n"); exit(EXIT_FAILURE);}
 
-    }
+    //}
 }
 
 
 void wait_blocking(my_semaphore *s){   //this func blocks the thread calling wait in case cntr = 0
     pthread_mutex_lock(&(s->mutexCounter));  //lock mutex counter
 
-    if(s->cntr <=1){   //resources unavailable
+    if(s->cntr <=1 && checker){   //resources unavailable
 
         pthread_mutex_unlock(&(s->mutexCounter));     
         pthread_mutex_lock(&(s->mutexForThreadBlock));    //lock thread till the time resources don't get released
         pthread_mutex_lock(&(s->mutexCounter));
 
-        if(!(s->cntr<=0)){s->cntr -= 1;}
+        if(!(s->cntr<=0 && checker)){s->cntr -= 1;}
 
         pthread_mutex_unlock(&(s->mutexCounter));
         return;
@@ -61,11 +66,11 @@ void wait_blocking(my_semaphore *s){   //this func blocks the thread calling wai
 int wait_non_blocking(my_semaphore *s){   //this function doesn't block the thread calling wait in case cntr = 0
     pthread_mutex_lock(&(s->mutexCounter));  //lock mutex cntr
 
-    if(s->cntr > 0){     //decrement semaphore counter
+    if(s->cntr > 0 && checker){     //decrement semaphore counter
         s->cntr -= 1;
     }
 
-    else if(s->cntr<=0){   //semaphore utlised - resouce unavailable
+    if(s->cntr<=0 && checker){   //semaphore utlised - resouce unavailable
 
     //The pthread_mutex_trylock() function attempts to lock the mutex mutex, but doesn't block the calling thread if the mutex is already locked.
 
@@ -106,7 +111,7 @@ void printValue(my_semaphore *s){   //prints current value of semaphore
 }
 
 
-void kill_Sem(my_semaphore *s){
+void kill_Sem(my_semaphore *s){   //to destroy semaphore
     pthread_mutex_destroy(&(s->mutexCounter));
     pthread_mutex_destroy(&(s->mutexForThreadBlock));
 }
@@ -169,8 +174,6 @@ void* philosopher(void* ph_id){
         signal(bowls);
         signal(bowls);
 
-        //usleep(200000);
-
     }
 
 }
@@ -180,7 +183,7 @@ void* philosopher(void* ph_id){
 int main(){
 
     printf("Enter no. of philosophers: ");
-    scanf("%d\n", &k);
+    scanf("%d", &k);
 
     if(k<2){
         printf("Invalid k. Exiting...\n");
@@ -204,7 +207,7 @@ int main(){
     }
 
     initialise(bowls, 2);  //counting semaphore initialization of a pair of bowls
-
+    fatal_check(k);
     //for all k philosophers
     for(int i=0;i<k;i++){
         int thread_check = pthread_create(phils+i,NULL, philosopher, phil_ID+i);
